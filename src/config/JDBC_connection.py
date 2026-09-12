@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 
@@ -13,33 +12,42 @@ password = os.getenv("REDSHIFT_PASSWORD")
 
 jdbc_url = f"jdbc:redshift://{host}:{port}/{database}"
 
-jar_path = (
-    "C:/Users/suppo/OneDrive/Desktop/HTML email template test/"
-    "Traffic_Pipeline/drivers/redshift-jdbc42-2.2.8.jar"
-)
+JAR_PATH = r"C:\Users\91738\OneDrive\Desktop\Traffic-Data-Pipeline\drivers\redshift-jdbc42-2.2.8.jar"
+jdbc_driver = "com.amazon.redshift.Driver"
+
 
 print("JAR path:")
-print(jar_path)
+print(JAR_PATH)
 
 print("\nJAR exists:")
-print(os.path.exists(jar_path))
+print(os.path.exists(JAR_PATH))
 
-if not os.path.exists(jar_path):
+
+if not os.path.exists(JAR_PATH):
     raise FileNotFoundError(
-        f"Redshift JDBC driver not found:\n{jar_path}"
+        f"Redshift JDBC JAR not found:\n{JAR_PATH}"
     )
+
+
+
 
 spark = (
     SparkSession.builder
     .appName("RedshiftConnectionTest")
-    .config("spark.driver.host", "127.0.0.1")
-    .config("spark.driver.bindAddress", "127.0.0.1")
-    .config("spark.jars", jar_path)
-    .config("spark.driver.extraClassPath", jar_path)
+    .master("local[*]")
+    .config(
+        "spark.driver.extraClassPath",
+        JAR_PATH
+    )
     .getOrCreate()
 )
 
-print("\nConnecting to Redshift...\n")
+
+print("\nSpark started successfully!")
+print("Connecting to Redshift...\n")
+
+
+
 
 df = (
     spark.read
@@ -48,9 +56,10 @@ df = (
     .option("dbtable", "daily_traffic_data.location")
     .option("user", username)
     .option("password", password)
-    .option("driver", "com.amazon.redshift.Driver")
+    .option("driver", jdbc_driver)
     .load()
 )
+
 
 print("Connection successful!")
 
@@ -62,5 +71,6 @@ df.show(10, truncate=False)
 
 print("\nTotal rows:")
 print(df.count())
+
 
 spark.stop()
